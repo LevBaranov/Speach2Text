@@ -35,6 +35,6 @@ if __name__ == '__main__':
     if MODE == 'dev':
         bot.polling(none_stop=True, timeout=123)
     else:
-        HEROKU_APP_NAME = os.getenv('MODE')
+        HEROKU_APP_NAME = os.getenv('HEROKU_APP_NAME')
         url=f'https://{HEROKU_APP_NAME}.herokuapp.com/{TOKEN}'
         bot.set_webhook(url=url)
