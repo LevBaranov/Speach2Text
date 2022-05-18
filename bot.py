@@ -3,7 +3,10 @@ import telebot
 from telebot import types
 from convert import Converter
 
-bot = telebot.TeleBot(os.getenv('TOKEN'))
+MODE = os.getenv('MODE')
+TOKEN = os.getenv('TOKEN')
+
+bot = telebot.TeleBot(TOKEN)
 
 
 @bot.message_handler(commands=['start'])
@@ -28,4 +31,10 @@ def get_audio_messages(message: types.Message):
     bot.send_message(message.chat.id, message_text, reply_to_message_id=message.message_id)
 
 
-bot.polling(none_stop=True, timeout=123)
+if __name__ == '__main__':
+    if MODE == 'dev':
+        bot.polling(none_stop=True, timeout=123)
+    else:
+        HEROKU_APP_NAME = os.getenv('MODE')
+        url=f'https://{HEROKU_APP_NAME}.herokuapp.com/{TOKEN}'
+        bot.set_webhook(url=url)
