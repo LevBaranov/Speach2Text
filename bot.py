@@ -2,6 +2,7 @@ import os
 import telebot
 from telebot import types
 from convert import Converter
+from flask import Flask, request
 
 MODE = os.getenv('MODE')
 TOKEN = os.getenv('TOKEN')
@@ -35,6 +36,22 @@ if __name__ == '__main__':
     if MODE == 'dev':
         bot.polling(none_stop=True, timeout=123)
     else:
-        HEROKU_APP_NAME = os.getenv('HEROKU_APP_NAME')
-        url=f'https://{HEROKU_APP_NAME}.herokuapp.com/{TOKEN}'
-        bot.set_webhook(url=url)
+        server = Flask(__name__)
+
+        @server.route('/' + TOKEN, methods=['POST'])
+        def get_message():
+            json_string = request.get_data().decode('utf-8')
+            update = telebot.types.Update.de_json(json_string)
+            bot.process_new_updates([update])
+            return "!", 200
+
+
+        @server.route("/")
+        def webhook():
+            bot.remove_webhook()
+            url = f'https://{os.getenv("HEROKU_APP_NAME")}.herokuapp.com/{TOKEN}'
+            bot.set_webhook(url=url)
+            return "!", 200
+
+
+        server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
