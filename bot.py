@@ -3,6 +3,7 @@ import telebot
 from telebot import types
 from convert import Converter
 from flask import Flask, request
+from database import Memory
 
 MODE = os.getenv('MODE')
 TOKEN = os.getenv('TOKEN')
@@ -10,9 +11,32 @@ TOKEN = os.getenv('TOKEN')
 bot = telebot.TeleBot(TOKEN)
 
 
+def save(message: types.Message):
+    db = Memory()
+    db.added_chat(telegram_id=message.from_user.id,
+                  t_username=message.from_user.username,
+                  t_first_name=message.from_user.first_name,
+                  t_last_name=message.from_user.last_name,
+                  language_code=message.from_user.language_code,
+                  chat_id=message.chat.id,
+                  chat_type=message.chat.type,
+                  title=message.chat.title,
+                  c_username=message.chat.username,
+                  c_first_name=message.chat.first_name,
+                  c_last_name=message.chat.last_name,
+                  bio=message.chat.bio,
+                  description=message.chat.description
+                  )
+    db.added_action(telegram_id=message.from_user.id,
+                    chat_id=message.chat.id
+                    )
+    del db
+
+
 @bot.message_handler(commands=['start'])
 def start(message: types.Message):
     welcome_mess = 'Привет! Отправляй голосовое, я расшифрую!'
+    save(message)
     bot.send_message(message.chat.id, welcome_mess)
 
 
@@ -29,6 +53,7 @@ def get_audio_messages(message: types.Message):
     message_text = converter.audio_to_text()
     del converter
 
+    save(message)
     bot.send_message(message.chat.id, message_text, reply_to_message_id=message.message_id)
 
 
@@ -37,6 +62,7 @@ if __name__ == '__main__':
         bot.polling(none_stop=True, timeout=123)
     else:
         server = Flask(__name__)
+
 
         @server.route('/' + TOKEN, methods=['POST'])
         def get_message():
@@ -52,5 +78,6 @@ if __name__ == '__main__':
             url = f'https://{os.getenv("HEROKU_APP_NAME")}.herokuapp.com/{TOKEN}'
             bot.set_webhook(url=url)
             return "!", 200
+
 
         server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
