@@ -22,6 +22,18 @@ class Memory:
                 sql.SQL(',').join(map(sql.Literal, values))
             ))
 
+    def _select(self, query, values):
+        cursor = self.conn.cursor()
+        cursor.execute(query, values)
+        records = cursor.fetchall()
+        return records
+
+    def _update(self, query, values):
+        cursor = self.conn.cursor()
+        cursor.execute(query, values)
+        records = cursor.fetchall()
+        return records
+
     def added_chat(self, **model):
         insert_user = '''
             INSERT INTO public.users (telegram_id, username, first_name, last_name, language_code)
@@ -55,3 +67,26 @@ class Memory:
         '''
         self._insert(insert_bot_use, [(model['telegram_id'],
                                        model['chat_id'])])
+
+    def get_settings(self, chat_id):
+        select_settings = '''
+            SELECT
+                c.convert_video ,
+                c.convert_audio 
+            FROM chats c 
+            WHERE c.chat_id = %s
+        '''
+        res = self._select(select_settings, [chat_id])
+        return {"video": res[0][0],
+                "audio": res[0][1]} if res and res[0] else None
+
+    def update_settings(self, chat_id, key, value):
+        update_settings = '''
+            UPDATE chats SET {field} = '%s' WHERE chat_id = %s
+            returning convert_video, convert_audio
+        '''
+        query = sql.SQL(update_settings).format(field=sql.Identifier(str("convert_" + key)))
+        res = self._update(query, (value, chat_id))
+        return {"video": res[0][0],
+                "audio": res[0][1]} if res and res[0] else None
+
