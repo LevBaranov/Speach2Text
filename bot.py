@@ -91,24 +91,33 @@ def start(message: types.Message):
 
 @bot.message_handler(content_types=['voice', 'video_note'])
 def get_audio_messages(message: types.Message):
+    allow_type = {
+        'all': ['voice', 'video_note'],
+        'audio': ['voice'],
+        'video': ['video_note']
+    }
     name = message.chat.first_name if message.chat.first_name else 'No_name'
-    logger.info(f"Chat {name} (ID: {message.chat.id}) start converting")
-    file_id = message.voice.file_id if message.voice else message.video_note.file_id
-    file_info = bot.get_file(file_id)
-    downloaded_file = bot.download_file(file_info.file_path)
-    file_name = str(message.message_id) + '.ogg'
-    logger.info(f"Chat {name} (ID: {message.chat.id}) download file {file_name}")
+    settings = transform_settings(get_settings(message.chat.id))
+    if settings and message.content_type in allow_type[settings]:
+        logger.info(f"Chat {name} (ID: {message.chat.id}) start converting")
+        file_id = message.voice.file_id if message.content_type in ['voice'] else message.video_note.file_id
+        file_info = bot.get_file(file_id)
+        downloaded_file = bot.download_file(file_info.file_path)
+        file_name = str(message.message_id) + '.ogg'
+        logger.info(f"Chat {name} (ID: {message.chat.id}) download file {file_name}")
 
-    with open(file_name, 'wb') as new_file:
-        new_file.write(downloaded_file)
-    converter = Converter(file_name)
-    os.remove(file_name)
-    message_text = converter.audio_to_text()
-    logger.info(f"Chat {name} (ID: {message.chat.id}) end converting")
-    del converter
+        with open(file_name, 'wb') as new_file:
+            new_file.write(downloaded_file)
+        converter = Converter(file_name)
+        os.remove(file_name)
+        message_text = converter.audio_to_text()
+        logger.info(f"Chat {name} (ID: {message.chat.id}) end converting")
+        del converter
 
-    save(message)
-    bot.send_message(message.chat.id, message_text, reply_to_message_id=message.message_id)
+        save(message)
+        bot.send_message(message.chat.id, message_text, reply_to_message_id=message.message_id)
+    else:
+        logger.info(f"Chat {name} (ID: {message.chat.id}) converting disable for type {message.content_type}")
 
 
 @bot.message_handler(commands=['settings'])
