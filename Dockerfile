@@ -1,10 +1,14 @@
 FROM python:3.10-alpine
 
-RUN apk update && apk add  --no-cache ffmpeg flac postgresql-dev gcc python3-dev musl-dev postgresql-client
+#RUN apt-get update && \
+#    apt-get install -y ffmpeg
+RUN apk add -q --progress --update --no-cache ffmpeg
 
-RUN pip install --upgrade pip
 COPY ./requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --upgrade pip && \
+    pip wheel --no-cache-dir --no-deps --wheel-dir /wheels -r ./requirements.txt && \
+    pip install --no-cache /wheels/*
 
-COPY . .
+COPY . /app
+WORKDIR /app
 CMD python ./bot.py
