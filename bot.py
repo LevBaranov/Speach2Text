@@ -1,6 +1,5 @@
 import os
 import logging
-import sys
 import telebot
 from telebot import types
 from convert import Converter
@@ -18,7 +17,7 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger()
 
 
-def save(message: types.Message):
+def save_chat(message: types.Message):
     db = Memory()
     db.added_chat(telegram_id=message.from_user.id,
                   t_username=message.from_user.username,
@@ -34,6 +33,11 @@ def save(message: types.Message):
                   bio=message.chat.bio,
                   description=message.chat.description
                   )
+    del db
+
+
+def save_action(message: types.Message):
+    db = Memory()
     db.added_action(telegram_id=message.from_user.id,
                     chat_id=message.chat.id
                     )
@@ -85,7 +89,7 @@ def start(message: types.Message):
     name = message.chat.first_name if message.chat.first_name else 'No_name'
     logger.info(f"Chat {name} (ID: {message.chat.id}) started bot")
     welcome_mess = 'Привет! Отправляй голосовое, я расшифрую!'
-    save(message)
+    save_chat(message)
     bot.send_message(message.chat.id, welcome_mess)
 
 
@@ -97,6 +101,7 @@ def get_audio_messages(message: types.Message):
         'video': ['video_note']
     }
     name = message.chat.first_name if message.chat.first_name else 'No_name'
+    save_chat(message)        # костыль если не нажали start, надо подумать как изменить логику
     settings = transform_settings(get_settings(message.chat.id))
     if settings and message.content_type in allow_type[settings]:
         logger.info(f"Chat {name} (ID: {message.chat.id}) start converting")
@@ -114,7 +119,7 @@ def get_audio_messages(message: types.Message):
         logger.info(f"Chat {name} (ID: {message.chat.id}) end converting")
         del converter
 
-        save(message)
+        save_action(message)
         bot.send_message(message.chat.id, message_text, reply_to_message_id=message.message_id)
     else:
         logger.info(f"Chat {name} (ID: {message.chat.id}) converting disable for type {message.content_type}")

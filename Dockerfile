@@ -1,7 +1,5 @@
 FROM python:3.10-alpine
 
-#RUN apt-get update && \
-#    apt-get install -y ffmpeg
 RUN apk add -q --progress --update --no-cache ffmpeg
 
 COPY ./requirements.txt .

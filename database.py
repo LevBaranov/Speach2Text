@@ -7,10 +7,7 @@ class Memory:
     """ Класс для работы с БД """
 
     def __init__(self):
-        self.conn = psycopg2.connect(dbname=os.getenv('POSTGRES_DB'),
-                                     user=os.getenv('POSTGRES_USER'),
-                                     password=os.getenv('POSTGRES_PASSWORD'),
-                                     host=os.getenv('POSTGRES_HOST'))
+        self.conn = psycopg2.connect(os.environ['DATABASE_URL'], sslmode='prefer')
         self.conn.autocommit = True
 
     def __del__(self):
