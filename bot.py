@@ -163,7 +163,7 @@ if __name__ == '__main__':
         @server.route("/")
         def webhook():
             bot.remove_webhook()
-            url = f'https://{os.getenv("HEROKU_APP_NAME")}.herokuapp.com/{TOKEN}'
+            url = f'{os.getenv("APP_URL")}/{TOKEN}'
             bot.set_webhook(url=url)
             return "!", 200
 
