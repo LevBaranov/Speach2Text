@@ -1,6 +1,11 @@
 import speech_recognition as sr
 import subprocess
 import os
+import logging
+# Enabling logging
+logging.basicConfig(level=logging.INFO,
+                    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger()
 
 
 class Converter:
@@ -17,7 +22,12 @@ class Converter:
             audio = r.record(source)
             r.adjust_for_ambient_noise(source)
 
-        return r.recognize_google(audio, language=self.language, key=os.getenv("API_KEY"))
+        try:
+            return r.recognize_google(audio, language=self.language, key=os.getenv("API_KEY"))
+        except sr.UnknownValueError:
+            logger.info("Google Speech Recognition could not understand audio")
+        except sr.RequestError as e:
+            logger.info(f"Could not request results from Google Speech Recognition service; {e}")
 
     def __del__(self):
         os.remove(self.wav_file)
