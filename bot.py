@@ -91,6 +91,7 @@ def start(message: types.Message):
     welcome_mess = 'Привет! Отправляй голосовое, я расшифрую!'
     save_chat(message)
     bot.send_message(message.chat.id, welcome_mess)
+    save_action(message)
 
 
 @bot.message_handler(content_types=['voice', 'video_note'])
@@ -115,6 +116,7 @@ def get_audio_messages(message: types.Message):
             new_file.write(downloaded_file)
         converter = Converter(file_name)
         os.remove(file_name)
+        logger.info(f"Chat {name} (File {file_name}) deleted")
         message_text = converter.audio_to_text()
         logger.info(f"Chat {name} (ID: {message.chat.id}) end converting")
         del converter
@@ -133,6 +135,7 @@ def settings(message: types.Message):
 
     bot.send_message(message.chat.id, message_text,
                      reply_markup=create_markup(transform_settings(get_settings(message.chat.id))))
+    save_action(message)
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -152,7 +155,7 @@ if __name__ == '__main__':
         server = Flask(__name__)
 
 
-        @server.route('/' + TOKEN, methods=['POST'])
+        @server.post('/' + TOKEN)
         def get_message():
             json_string = request.get_data().decode('utf-8')
             update = telebot.types.Update.de_json(json_string)
