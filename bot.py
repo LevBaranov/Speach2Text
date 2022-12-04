@@ -162,6 +162,19 @@ if __name__ == '__main__':
             bot.process_new_updates([update])
             return "!", 200
 
+        @server.get("/files")
+        def files():
+            path = '.'
+            files = [_ for _ in os.listdir(path) if _[-4:] in ['.wav', '.ogg']]
+            return {'files': files}, 200
+
+        @server.delete("/files")
+        def del_files():
+            path = '.'
+            files = [_ for _ in os.listdir(path) if _[-4:] in ['.wav', '.ogg']]
+            for _ in files:
+                os.remove(_)
+            return "!", 204
 
         @server.route("/")
         def webhook():

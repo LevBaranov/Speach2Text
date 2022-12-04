@@ -1,4 +1,4 @@
 SpeechRecognition==3.8.1
 pyTelegramBotAPI==4.5.1
-Flask==2.1.2
+Flask==2.2.2
 psycopg2-binary==2.9.3
