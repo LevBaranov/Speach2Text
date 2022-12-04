@@ -17,7 +17,7 @@ class Converter:
             audio = r.record(source)
             r.adjust_for_ambient_noise(source)
 
-        return r.recognize_google(audio, language=self.language)
+        return r.recognize_google(audio, language=self.language, key=os.getenv("API_KEY"))
 
     def __del__(self):
         os.remove(self.wav_file)

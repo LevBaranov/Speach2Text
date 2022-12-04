@@ -116,7 +116,7 @@ def get_audio_messages(message: types.Message):
             new_file.write(downloaded_file)
         converter = Converter(file_name)
         os.remove(file_name)
-        logger.info(f"Chat {name} (File {file_name}) deleted")
+        logger.info(f"Chat {name} (ID: {message.chat.id}) File {file_name} deleted")
         message_text = converter.audio_to_text()
         logger.info(f"Chat {name} (ID: {message.chat.id}) end converting")
         del converter
