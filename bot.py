@@ -4,12 +4,14 @@ import telebot
 from telebot import types
 from convert import Converter
 from flask import Flask, request
-from utils import save_chat, save_action, transform_settings, get_settings, update_settings, create_markup
+from utils import save_chat, save_action, transform_settings, get_settings, update_settings, create_markup,\
+    download_file, get_chat_name
 
 MODE = os.getenv('MODE')
 TOKEN = os.getenv('TOKEN')
 
 bot = telebot.TeleBot(TOKEN)
+converter = Converter()
 
 # Enabling logging
 logging.basicConfig(level=logging.INFO,
@@ -29,35 +31,35 @@ def start(message: types.Message):
 
 @bot.message_handler(content_types=['voice', 'video_note'])
 def get_audio_messages(message: types.Message):
+    save_chat(message)  # костыль если не нажали start, надо подумать как изменить логику
+
     allow_type = {
         'all': ['voice', 'video_note'],
         'audio': ['voice'],
         'video': ['video_note']
     }
-    name = message.chat.first_name if message.chat.first_name else 'No_name'
-    save_chat(message)        # костыль если не нажали start, надо подумать как изменить логику
+
+    chat_name = get_chat_name(message)
     settings = transform_settings(get_settings(message.chat.id))
+
     if settings and message.content_type in allow_type[settings]:
-        logger.info(f"Chat {name} (ID: {message.chat.id}) start converting")
-        file_id = message.voice.file_id if message.content_type in ['voice'] else message.video_note.file_id
-        file_info = bot.get_file(file_id)
-        downloaded_file = bot.download_file(file_info.file_path)
-        file_name = str(message.message_id) + '.ogg'
-        logger.info(f"Chat {name} (ID: {message.chat.id}) download file {file_name}")
+        logger.info(f"Chat {chat_name} (ID: {message.chat.id}) start converting")
 
-        with open(file_name, 'wb') as new_file:
-            new_file.write(downloaded_file)
-        converter = Converter(file_name)
+        file_name = download_file(bot, message)
+        logger.info(f"Chat {chat_name} (ID: {message.chat.id}) download file {file_name}")
+
+        message_text = converter.audio_to_text(file_name)
+        if message_text:
+            bot.send_message(message.chat.id, message_text, reply_to_message_id=message.message_id)
+        else:
+            logger.error('Произошла ошибка при конвертации')
+        logger.info(f"Chat {chat_name} (ID: {message.chat.id}) end converting")
+
         os.remove(file_name)
-        logger.info(f"Chat {name} (ID: {message.chat.id}) File {file_name} deleted")
-        message_text = converter.audio_to_text()
-        logger.info(f"Chat {name} (ID: {message.chat.id}) end converting")
-        del converter
-
+        logger.info(f"Chat {chat_name} (ID: {message.chat.id}) File {file_name} deleted")
         save_action(message)
-        bot.send_message(message.chat.id, message_text, reply_to_message_id=message.message_id)
     else:
-        logger.info(f"Chat {name} (ID: {message.chat.id}) converting disable for type {message.content_type}")
+        logger.info(f"Chat {chat_name} (ID: {message.chat.id}) converting disable for type {message.content_type}")
 
 
 @bot.message_handler(commands=['settings'])

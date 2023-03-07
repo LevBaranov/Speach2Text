@@ -1,5 +1,6 @@
 import logging
 from database import Memory
+import telebot
 from telebot import types
 
 
@@ -74,3 +75,22 @@ def create_markup(type: str = None) -> types.InlineKeyboardMarkup:
     markup.add(types.InlineKeyboardButton(f"Audio{check_a}", callback_data="audio"),
                types.InlineKeyboardButton(f"Video{check_v}", callback_data="video"))
     return markup
+
+
+def download_file(bot: telebot.TeleBot, message: types.Message) -> str:
+    file_name = str(message.message_id) + '.ogg'
+    file_id = message.voice.file_id if message.content_type in ['voice'] else message.video_note.file_id
+    file_info = bot.get_file(file_id)
+    downloaded_file = bot.download_file(file_info.file_path)
+    with open(file_name, 'wb') as new_file:
+        new_file.write(downloaded_file)
+
+    return file_name
+
+
+def get_chat_name(message: types.Message) -> str:
+    if message.chat.type == 'private' or message.chat.first_name:
+        name = message.chat.first_name
+    else:
+        name = message.chat.username if message.chat.username else 'No_name'
+    return name
