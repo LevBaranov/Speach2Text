@@ -94,3 +94,13 @@ def get_chat_name(message: types.Message) -> str:
     else:
         name = message.chat.username if message.chat.username else 'No_name'
     return name
+
+
+def get_chats() -> list:
+    db = Memory()
+    return db.get_all_chats()
+
+
+def set_chat_inactive(chat_id: int):
+    db = Memory()
+    db.set_chat_inactive(chat_id)

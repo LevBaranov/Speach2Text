@@ -1,11 +1,11 @@
 import os
 import logging
 import telebot
-from telebot import types
+from telebot import types, apihelper
 from convert import Converter
 from flask import Flask, request
 from utils import save_chat, save_action, transform_settings, get_settings, update_settings, create_markup,\
-    download_file, get_chat_name
+    download_file, get_chat_name, get_chats, set_chat_inactive
 
 MODE = os.getenv('MODE')
 TOKEN = os.getenv('TOKEN')
@@ -21,8 +21,8 @@ logger = logging.getLogger()
 
 @bot.message_handler(commands=['start'])
 def start(message: types.Message):
-    name = message.chat.first_name if message.chat.first_name else 'No_name'
-    logger.info(f"Chat {name} (ID: {message.chat.id}) started bot")
+    chat_name = get_chat_name(message)
+    logger.info(f"Chat {chat_name} (ID: {message.chat.id}) started bot")
     welcome_mess = 'Привет! Отправляй голосовое, я расшифрую!'
     save_chat(message)
     bot.send_message(message.chat.id, welcome_mess)
@@ -64,8 +64,8 @@ def get_audio_messages(message: types.Message):
 
 @bot.message_handler(commands=['settings'])
 def settings(message: types.Message):
-    name = message.chat.first_name if message.chat.first_name else 'No_name'
-    logger.info(f"Chat {name} (ID: {message.chat.id}) send settings")
+    chat_name = get_chat_name(message)
+    logger.info(f"Chat {chat_name} (ID: {message.chat.id}) send settings")
     message_text = 'Укажите, что мне трансформировать в текст'
 
     bot.send_message(message.chat.id, message_text,
@@ -80,6 +80,25 @@ def callback_query(call: types.CallbackQuery):
     bot.answer_callback_query(call.id, "Меняю настройки!")
     bot.edit_message_reply_markup(call.message.chat.id, call.message.id, call.inline_message_id,
                                   reply_markup=markup)
+
+
+@bot.message_handler(commands=['broadcast'])
+def settings(message: types.Message):
+    chat_name = get_chat_name(message)
+    admins = os.getenv("ADMIN_IDS").split(',')
+    if str(message.from_user.id) in admins:
+        logger.info(f"Chat {chat_name} (ID: {message.chat.id}) start broadcast")
+        message_text = message.text.split(maxsplit=1)
+        for chat_id in get_chats():
+            logger.info(f"Chat {chat_name} (ID: {chat_id}) send broadcast message")
+            try:
+                bot.send_message(chat_id, message_text[1])
+            except apihelper.ApiTelegramException:
+                set_chat_inactive(chat_id)
+                logger.info(f"Chat {chat_name} (ID: {chat_id}) message don't send")
+    else:
+        logger.info(f"Chat {chat_name} (ID: {message.chat.id}) failed broadcast. {message.from_user.id} isn't admin")
+    save_action(message)
 
 
 if __name__ == '__main__':
