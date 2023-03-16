@@ -60,11 +60,13 @@ class Memory:
 
     def added_action(self, **model):
         insert_bot_use = '''
-            INSERT INTO public.bot_usage (telegram_id, chat_id)
+            INSERT INTO public.bot_usage (telegram_id, chat_id, action)
             VALUES {}
         '''
         self._insert(insert_bot_use, [(model['telegram_id'],
-                                       model['chat_id'])])
+                                       model['chat_id'],
+                                       model['action']
+                                       )])
 
     def get_settings(self, chat_id):
         select_settings = '''

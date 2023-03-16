@@ -27,7 +27,7 @@ def start(message: types.Message):
     welcome_mess = 'Привет! Отправляй голосовое, я расшифрую!'
     save_chat(message)
     bot.send_message(message.chat.id, welcome_mess)
-    save_action(message)
+    save_action(message, 'start')
 
 
 @bot.message_handler(content_types=['voice', 'video_note'])
@@ -54,13 +54,15 @@ def get_audio_messages(message: types.Message):
             bot.send_message(message.chat.id, message_text, reply_to_message_id=message.message_id)
         else:
             logger.error('Произошла ошибка при конвертации')
+            save_action(message, 'failed_conversion')
         logger.info(f"Chat {chat_name} (ID: {message.chat.id}) end converting")
 
         os.remove(file_name)
         logger.info(f"Chat {chat_name} (ID: {message.chat.id}) File {file_name} deleted")
-        save_action(message)
+        save_action(message, 'successful_conversion')
     else:
         logger.info(f"Chat {chat_name} (ID: {message.chat.id}) converting disable for type {message.content_type}")
+        save_action(message, 'conversion_disabled')
 
 
 @bot.message_handler(commands=['settings'])
@@ -71,7 +73,7 @@ def settings(message: types.Message):
 
     bot.send_message(message.chat.id, message_text,
                      reply_markup=create_markup(transform_settings(get_settings(message.chat.id))))
-    save_action(message)
+    save_action(message, 'show_settings')
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -81,6 +83,7 @@ def callback_query(call: types.CallbackQuery):
     bot.answer_callback_query(call.id, "Меняю настройки!")
     bot.edit_message_reply_markup(call.message.chat.id, call.message.id, call.inline_message_id,
                                   reply_markup=markup)
+    save_action(call.message, 'edit_settings')
 
 
 @bot.message_handler(commands=['broadcast'])
@@ -99,7 +102,7 @@ def settings(message: types.Message):
                 logger.info(f"Chat {chat_name} (ID: {chat_id}) message don't send")
     else:
         logger.info(f"Chat {chat_name} (ID: {message.chat.id}) failed broadcast. {message.from_user.id} isn't admin")
-    save_action(message)
+    save_action(message, 'broadcast')
 
 
 @bot.message_handler(commands=['about'])
@@ -109,7 +112,7 @@ def settings(message: types.Message):
     message_text = TEXT_ABOUT
     bot.send_message(message.chat.id, message_text)
 
-    save_action(message)
+    save_action(message, 'about')
 
 
 if __name__ == '__main__':

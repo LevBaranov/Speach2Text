@@ -29,11 +29,11 @@ def save_chat(message: types.Message):
     del db
 
 
-def save_action(message: types.Message):
+def save_action(message: types.Message, action: str = 'unknown'):
     db = Memory()
     db.added_action(telegram_id=message.from_user.id,
-                    chat_id=message.chat.id
-                    )
+                    chat_id=message.chat.id,
+                    action=action)
     del db
 
 
