@@ -5,7 +5,8 @@ from telebot import types, apihelper
 from convert import Converter
 from flask import Flask, request
 from utils import save_chat, save_action, transform_settings, get_settings, update_settings, create_markup,\
-    download_file, get_chat_name, get_chats, set_chat_inactive
+    download_file, get_chat_name, get_chats, set_chat_inactive,\
+    TEXT_ABOUT
 
 MODE = os.getenv('MODE')
 TOKEN = os.getenv('TOKEN')
@@ -98,6 +99,16 @@ def settings(message: types.Message):
                 logger.info(f"Chat {chat_name} (ID: {chat_id}) message don't send")
     else:
         logger.info(f"Chat {chat_name} (ID: {message.chat.id}) failed broadcast. {message.from_user.id} isn't admin")
+    save_action(message)
+
+
+@bot.message_handler(commands=['about'])
+def settings(message: types.Message):
+    chat_name = get_chat_name(message)
+    logger.info(f"Chat {chat_name} (ID: {message.chat.id}) get about")
+    message_text = TEXT_ABOUT
+    bot.send_message(message.chat.id, message_text)
+
     save_action(message)
 
 
