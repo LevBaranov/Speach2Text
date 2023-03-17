@@ -90,18 +90,21 @@ def callback_query(call: types.CallbackQuery):
 def settings(message: types.Message):
     chat_name = get_chat_name(message)
     admins = os.getenv("ADMIN_IDS").split(',')
-    if str(message.from_user.id) in admins:
-        logger.info(f"Chat {chat_name} (ID: {message.chat.id}) start broadcast")
-        message_text = message.text.split(maxsplit=1)
-        for chat_id in get_chats():
-            logger.info(f"Chat {chat_name} (ID: {chat_id}) send broadcast message")
-            try:
-                bot.send_message(chat_id, message_text[1])
-            except apihelper.ApiTelegramException:
-                set_chat_inactive(chat_id)
-                logger.info(f"Chat {chat_name} (ID: {chat_id}) message don't send")
+    message_text = message.text.split(maxsplit=1)
+    if message_text and len(message_text) > 1:
+        if str(message.from_user.id) in admins:
+            logger.info(f"Chat {chat_name} (ID: {message.chat.id}) start broadcast")
+            for chat_id in get_chats():
+                logger.info(f"Chat {chat_name} (ID: {chat_id}) send broadcast message")
+                try:
+                    bot.send_message(chat_id, message_text[1])
+                except apihelper.ApiTelegramException:
+                    set_chat_inactive(chat_id)
+                    logger.info(f"Chat {chat_name} (ID: {chat_id}) message don't send")
+        else:
+            logger.info(f"Chat {chat_name} (ID: {message.chat.id}) failed broadcast. {message.from_user.id} isn't admin")
     else:
-        logger.info(f"Chat {chat_name} (ID: {message.chat.id}) failed broadcast. {message.from_user.id} isn't admin")
+        logger.info(f"Chat {chat_name} (ID: {message.chat.id}) failed broadcast. {message_text} invalid")
     save_action(message, 'broadcast')
 
 
@@ -118,6 +121,7 @@ def settings(message: types.Message):
 if __name__ == '__main__':
     logger.info("Starting bot")
     if MODE == 'dev':
+        bot.remove_webhook()
         bot.polling(none_stop=True, timeout=123)
     else:
         server = Flask(__name__)
