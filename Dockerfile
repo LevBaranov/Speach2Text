@@ -1,7 +1,5 @@
 FROM python:3.10-alpine3.16
 
-RUN apk add -q --progress --update --no-cache ffmpeg
-
 COPY ./requirements.txt .
 RUN pip install --upgrade pip && \
     pip wheel --no-cache-dir --no-deps --wheel-dir /wheels -r ./requirements.txt && \

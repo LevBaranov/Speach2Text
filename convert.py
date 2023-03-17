@@ -1,7 +1,7 @@
-import speech_recognition as sr
-import subprocess
 import os
 import logging
+import requests
+
 # Enabling logging
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -10,24 +10,19 @@ logger = logging.getLogger()
 
 class Converter:
 
-    def __init__(self, path_to_file: str, language: str = "ru-RU"):
-        self.language = language
-        subprocess.run(['ffmpeg', '-v', 'quiet', '-i', path_to_file, path_to_file.replace(".ogg", ".wav")])
-        self.wav_file = path_to_file.replace(".ogg", ".wav")
+    def __init__(self):
+        self.url_converter = os.getenv("CONVERTER_URL")
+        self.auth_token = os.getenv("CONVERTER_TOKEN")
 
-    def audio_to_text(self) -> str:
-        r = sr.Recognizer()
+    def audio_to_text(self, file_name: str) -> str:
+        url = f"{self.url_converter}/transcription"
 
-        with sr.AudioFile(self.wav_file) as source:
-            audio = r.record(source)
-            r.adjust_for_ambient_noise(source)
-
-        try:
-            return r.recognize_google(audio, language=self.language, key=os.getenv("API_KEY"))
-        except sr.UnknownValueError:
-            logger.info("Google Speech Recognition could not understand audio")
-        except sr.RequestError as e:
-            logger.info(f"Could not request results from Google Speech Recognition service; {e}")
-
-    def __del__(self):
-        os.remove(self.wav_file)
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        r = requests.post(url, headers=headers, files={'file': open(file_name, 'rb')})
+        if r.status_code == 200:
+            resp_json = r.json()
+            response = resp_json["response_text"]
+        else:
+            response = None
+        logger.info(f"Response: {r.status_code} {r.text}")
+        return response
